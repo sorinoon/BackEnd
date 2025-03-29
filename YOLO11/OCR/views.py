@@ -9,7 +9,7 @@ from rest_framework.parsers import MultiPartParser
 from .models import OCRResult
 from .serializers import OCRResultSerializer
 
-openai.api_key = settings.OPENAI_API_KEY  # OpenAI API 키 설정
+openai.api_key = "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"  # OpenAI API 키 설정
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
@@ -62,8 +62,8 @@ def generate_tts(text):
     """
     url = "https://naveropenapi.apigw.ntruss.com/voice/v1/tts"
     headers = {
-        "X-NCP-APIGW-API-KEY-ID": settings.NAVER_CLIENT_ID,
-        "X-NCP-APIGW-API-KEY": settings.NAVER_CLIENT_SECRET,
+        "X-NCP-APIGW-API-KEY-ID": "8419bd554f",
+        "X-NCP-APIGW-API-KEY": "p0e0HlCPeyiyCnsVhSICyMQQG4uI31zqW7B4KPO3",
         "Content-Type": "application/x-www-form-urlencoded"
     }
     data = {

@@ -88,12 +88,12 @@
 # def index(request):
 #     return render(request, 'index.html')
 
-from django.http import StreamingHttpResponse
 from django.shortcuts import render
 from .yolo_model import generate_frames
+from django.http import StreamingHttpResponse, JsonResponse
 
 def video_feed(request):
     return StreamingHttpResponse(generate_frames(0), content_type="multipart/x-mixed-replace; boundary=frame")
 
-def index(request):
-    return render(request, 'index.html')
+def api_info(request):
+    return JsonResponse({"message": "Django API is working!"})  # JSON 응답 추가

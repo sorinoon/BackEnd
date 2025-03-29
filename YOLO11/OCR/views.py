@@ -8,12 +8,14 @@ from rest_framework.decorators import api_view, parser_classes
 from rest_framework.parsers import MultiPartParser
 from .models import OCRResult
 from .serializers import OCRResultSerializer
+import cv2
+import numpy as np
+import requests
+import pygame
+import io
+import urllib.request
 
-<<<<<<< Updated upstream
-openai.api_key = "settings.OPENAI_API_KEY"  # OpenAI API 키 설정
-=======
-openai.api_key = settings.OPENAI_API_KEY  # OpenAI API 키 설정
->>>>>>> Stashed changes
+openai.api_key = "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"  # OpenAI API 키 설정
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
@@ -61,27 +63,34 @@ def ocr_image(request):
 
 
 def generate_tts(text):
-    """
-    네이버 클로바 TTS API를 사용하여 텍스트를 음성으로 변환하는 함수
-    """
-    url = "https://naveropenapi.apigw.ntruss.com/voice/v1/tts"
-    headers = {
-<<<<<<< Updated upstream
-        "X-NCP-APIGW-API-KEY-ID": "8419bd554f",
-        "X-NCP-APIGW-API-KEY": "p0e0HlCPeyiyCnsVhSICyMQQG4uI31zqW7B4KPO3",
-=======
-        "X-NCP-APIGW-API-KEY-ID": settings.NAVER_CLIENT_ID,
-        "X-NCP-APIGW-API-KEY": settings.NAVER_CLIENT_SECRET,
->>>>>>> Stashed changes
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-    data = {
-        "speaker": "nara",  # 목소리 유형 (ex: nara, jinho 등)
-        "speed": "0",  # 속도 (-5 ~ 5)
-        "text": text
-    }
-
-    response = requests.post(url, headers=headers, data=data)
-    if response.status_code == 200:
-        return response.content  # MP3 파일 데이터 반환
-    return None
+    client_id = "8419bd554f"
+    client_secret = "1tI9xbELi4xyGC426tPQljd9HPTuPiKELzA3vxx8"
+    
+    encText = text
+    data = "speaker=nara&volume=0&speed=0&pitch=0&format=mp3&text=" + encText
+    url = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
+    request = urllib.request.Request(url)
+    request.add_header("X-NCP-APIGW-API-KEY-ID", client_id)
+    request.add_header("X-NCP-APIGW-API-KEY", client_secret)
+    
+    try:
+        response = urllib.request.urlopen(request, data=data.encode('utf-8'))
+        rescode = response.getcode()  # getcode()로 응답 코드 확인
+        
+        if rescode == 200:
+            print("TTS mp3 저장")
+            response_body = response.read()
+            
+            # 이후 pygame을 이용해 mp3를 재생
+            pygame.mixer.init()
+            audio_stream = io.BytesIO(response_body)
+            pygame.mixer.music.load(audio_stream)
+            pygame.mixer.music.play()
+            
+            while pygame.mixer.music.get_busy():
+                continue  # 음성이 끝날 때까지 대기
+        else:
+            print(f"Error Code: {rescode}")
+    
+    except Exception as e:
+        print(f"Error: {e}")

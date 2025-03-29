@@ -27,7 +27,8 @@ from django.urls import path, include
 
 urlpatterns = [
     # path('admin/', admin.site.urls),
-    path('', include('detect.urls')),  # your_app의 URL 연결
+    path('', include('detect.urls')),  # your_app의 URL 
+   #path('',include('OCR.urls'))
 ]
 
 

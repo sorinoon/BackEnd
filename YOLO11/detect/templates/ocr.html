@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOLO Object Detection</title>
+</head>
+<body>
+    <h1>OCR</h1>
+    <img src="/ocr/video_feed/" width="800">
+
+    <!-- 분석 버튼 추가 -->
+    <button onclick="analyzeImage()">이미지 분석</button>
+    <p id="result"></p>
+
+    <script>
+        function analyzeImage() {
+            fetch("/ocr/analyze/", { method: "POST" })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("result").innerText = "분석 결과: " + data.description;
+            })
+            .catch(error => console.error("Error:", error));
+        }
+    </script>
+</body>
+</html>

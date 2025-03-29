@@ -76,14 +76,24 @@
 #             return JsonResponse({"error": "No image provided"}, status=400)
 #     else:
 #         return JsonResponse({"error": "Invalid method"}, status=405)
+# from django.http import StreamingHttpResponse
+# from django.shortcuts import render
+# from .yolo_model import generate_frames
+
+# VIDEO_PATH = "C:/Users/joonh/OneDrive/바탕 화면/Django/YOLO/testVideo.mp4"
+
+# def video_feed(request):
+#     return StreamingHttpResponse(generate_frames(VIDEO_PATH), content_type="multipart/x-mixed-replace; boundary=frame")
+
+# def index(request):
+#     return render(request, 'index.html')
+
 from django.http import StreamingHttpResponse
 from django.shortcuts import render
 from .yolo_model import generate_frames
 
-VIDEO_PATH = "C:/Users/joonh/OneDrive/바탕 화면/Django/YOLO/testVideo.mp4"
-
 def video_feed(request):
-    return StreamingHttpResponse(generate_frames(VIDEO_PATH), content_type="multipart/x-mixed-replace; boundary=frame")
+    return StreamingHttpResponse(generate_frames(0), content_type="multipart/x-mixed-replace; boundary=frame")
 
 def index(request):
     return render(request, 'index.html')

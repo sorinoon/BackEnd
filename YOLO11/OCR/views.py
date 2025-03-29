@@ -9,7 +9,7 @@ from rest_framework.parsers import MultiPartParser
 from .models import OCRResult
 from .serializers import OCRResultSerializer
 
-openai.api_key = "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"  # OpenAI API 키 설정
+openai.api_key = "settings.OPENAI_API_KEY"  # OpenAI API 키 설정
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser])

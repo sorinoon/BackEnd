@@ -50,47 +50,9 @@ def ocr_image(request):
         # OCR 결과 저장
         ocr_result = OCRResult.objects.create(image=image, text=ocr_text)
 
-        # 네이버 클로바 TTS 변환
-        audio_file = generate_tts(ocr_text)
-        if audio_file:
-            ocr_result.audio.save(f"tts_{ocr_result.id}.mp3", ContentFile(audio_file))
-
         serializer = OCRResultSerializer(ocr_result)
         return Response(serializer.data)
     
     except Exception as e:
         return Response({"error": str(e)}, status=500)
 
-
-def generate_tts(text):
-    client_id = "8419bd554f"
-    client_secret = "1tI9xbELi4xyGC426tPQljd9HPTuPiKELzA3vxx8"
-    
-    encText = text
-    data = "speaker=nara&volume=0&speed=0&pitch=0&format=mp3&text=" + encText
-    url = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
-    request = urllib.request.Request(url)
-    request.add_header("X-NCP-APIGW-API-KEY-ID", client_id)
-    request.add_header("X-NCP-APIGW-API-KEY", client_secret)
-    
-    try:
-        response = urllib.request.urlopen(request, data=data.encode('utf-8'))
-        rescode = response.getcode()  # getcode()로 응답 코드 확인
-        
-        if rescode == 200:
-            print("TTS mp3 저장")
-            response_body = response.read()
-            
-            # 이후 pygame을 이용해 mp3를 재생
-            pygame.mixer.init()
-            audio_stream = io.BytesIO(response_body)
-            pygame.mixer.music.load(audio_stream)
-            pygame.mixer.music.play()
-            
-            while pygame.mixer.music.get_busy():
-                continue  # 음성이 끝날 때까지 대기
-        else:
-            print(f"Error Code: {rescode}")
-    
-    except Exception as e:
-        print(f"Error: {e}")

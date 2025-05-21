@@ -1,99 +1,120 @@
-# import torch
-# from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from PIL import Image
-# from io import BytesIO
-# from ultralytics import YOLO
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser
+from rest_framework.response import Response
+from rest_framework import status
+from ultralytics import YOLO
+import cv2
+import numpy as np
+import urllib.request
+import urllib.parse
+import io
+from django.http import FileResponse
+from .task import process_yolo_and_tts
+FOCAL_LENGTH = 615
+REFERENCE_OBJECT_WIDTH = 30  # cm
+WARNING_DISTANCE = 300  # 3미터
 
-# # 모델 로드 (한 번만 로드되도록 하기)
-# model = YOLO("C:\Users\joonh\OneDrive\바탕 화면\YOLO11\runs\detect\train\weights\best.pt")  # 학습된 YOLO 모델
+class YoloDetectView(APIView):
+    parser_classes = [MultiPartParser]
 
-# @csrf_exempt  # CSRF 토큰을 제외한 요청을 허용
-# def detect_objects(request):
-#     if request.method == "POST":
-#         # 요청에서 이미지를 가져오기
-#         image_file = request.FILES.get("image")  # 이미지 파일 가져오기
+    def post(self, request):
+        image_file = request.FILES.get('image')
+        if not image_file:
+            return Response({"error": "No image provided"}, status=400)
+        process_yolo_and_tts.delay(image_file)  # Celery 백그라운드 작업 호출
+        return Response({"message": "Processing started"}, status=202)
+    
+        # file_bytes = np.asarray(bytearray(image_file.read()), dtype=np.uint8)
+        # frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-#         if image_file:
-#             # 이미지를 PIL 이미지로 변환
-#             image = Image.open(image_file)
+        # model_path = "runs/detect/train/weights/best.pt"
+        # try:
+        #     model = YOLO(model_path)
+        #     results = model(frame)
+        # except Exception as e:
+        #     print(f"YOLO 처리 중 오류: {e}")
+        #     return Response({"error": "YOLO 처리 실패", "detail": str(e)}, status=500)
 
-#             # 이미지를 모델에 입력하고 예측 수행
-#             results = model(image)  # 이미지를 모델에 전달하여 결과 얻기
+        # result = results[0]
+        # detected_objects = []
+        # closest_obj = None
+        # closest_distance = float('inf')
 
-#             # 예측된 객체들의 정보를 얻기
-#             predictions = results.pandas().xywh[0].to_dict(orient="records")  # 예측 결과를 딕셔너리로 변환
+        # for box in result.boxes:
+        #     x1, y1, x2, y2 = map(int, box.xyxy[0])
+        #     class_id = int(box.cls[0])
+        #     class_name = model.names[class_id]
+        #     object_width_pixels = abs(x2 - x1)
 
-#             return JsonResponse({"predictions": predictions}, status=200)
-#         else:
-#             return JsonResponse({"error": "No image provided"}, status=400)
-#     else:
-#         return JsonResponse({"error": "Invalid method"}, status=405)
+        #     if object_width_pixels > 0:
+        #         distance = (REFERENCE_OBJECT_WIDTH * FOCAL_LENGTH) / object_width_pixels
+        #     else:
+        #         distance = None
 
-# import torch
-# import cv2
-# import numpy as np
-# from django.http import JsonResponse
-# from django.views.decorators.csrf import csrf_exempt
-# from PIL import Image
-# from io import BytesIO
-# from ultralytics import YOLO
+        #     detected_objects.append({
+        #         "class": class_name,
+        #         "distance_cm": round(distance, 2) if distance else None,
+        #         "bounding_box": [x1, y1, x2, y2]
+        #     })
 
-# # 모델 로드 (한 번만 로드되도록 하기)
-# model = YOLO("C:\Users\joonh\OneDrive\바탕 화면\YOLO11\runs\detect\train\weights\best.pt")  # 학습된 YOLO 모델
+        #     if distance and distance < closest_distance:
+        #         closest_distance = distance
+        #         closest_obj = class_name
 
-# # 카메라의 초점 거리와 실제 물체의 높이를 설정
-# FOCAL_LENGTH = 800  # 예시로 설정한 초점 거리 (픽셀 단위)
-# REAL_OBJECT_HEIGHT = 1.7  # 예시로 설정한 실제 물체의 높이 (미터, 사람 평균 높이)
+        # if closest_obj and closest_distance <= WARNING_DISTANCE:
+        #     warning_text = f"{closest_obj}이 {int(closest_distance)}센티미터 앞에 있습니다."
+        #     print(f"⚠️ {warning_text}")
 
-# @csrf_exempt
-# def detect_objects(request):
-#     if request.method == "POST":
-#         # 요청에서 이미지를 가져오기
-#         image_file = request.FILES.get("image")  # 이미지 파일 가져오기
+        #     tts_audio = self.get_tts_audio(warning_text)
+        #     if tts_audio:
+        #         return FileResponse(
+        #             tts_audio,
+        #             content_type='audio/mpeg',
+        #             as_attachment=False,
+        #             filename="warning.mp3"
+        #         )
+        #     else:
+        #         return Response({"error": "TTS generation failed"}, status=500)
 
-#         if image_file:
-#             # 이미지를 PIL 이미지로 변환
-#             image = Image.open(image_file)
+        # return Response({"detected": detected_objects})
 
-#             # 이미지를 모델에 입력하고 예측 수행
-#             results = model(image)
+    def get_tts_audio(self, text):
+        client_id = "8419bd554f"
+        client_secret = "1tI9xbELi4xyGC426tPQljd9HPTuPiKELzA3vxx8"
 
-#             # 예측된 객체들의 정보를 얻기
-#             predictions = results.pandas().xywh[0].to_dict(orient="records")
+        data = "speaker=nara&volume=0&speed=0&pitch=0&format=mp3&text=" + urllib.parse.quote(text)
+        url = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
+        request = urllib.request.Request(url)
+        request.add_header("X-NCP-APIGW-API-KEY-ID", client_id)
+        request.add_header("X-NCP-APIGW-API-KEY", client_secret)
 
-#             # 거리 계산
-#             for prediction in predictions:
-#                 object_height_in_image = prediction['height']
-#                 if object_height_in_image > 0:
-#                     distance = (FOCAL_LENGTH * REAL_OBJECT_HEIGHT) / object_height_in_image
-#                     prediction["distance"] = distance  # 예측 결과에 거리 정보 추가
-#                 else:
-#                     prediction["distance"] = "N/A"  # 높이가 0일 경우 거리 계산 불가
+        try:
+            response = urllib.request.urlopen(request, data=data.encode('utf-8'))
+            if response.getcode() == 200:
+                return io.BytesIO(response.read())
+            else:
+                print(f"TTS Error Code: {response.getcode()}")
+                return None
+        except Exception as e:
+            print(f"TTS Exception: {e}")
+            return None
+# from rest_framework.views import APIView
+# from rest_framework.parsers import MultiPartParser
+# from rest_framework.response import Response
+# from rest_framework import status
+# from .task import process_yolo_and_tts  # Celery 작업 호출
 
-#             return JsonResponse({"predictions": predictions}, status=200)
-#         else:
-#             return JsonResponse({"error": "No image provided"}, status=400)
-#     else:
-#         return JsonResponse({"error": "Invalid method"}, status=405)
-# from django.http import StreamingHttpResponse
-# from django.shortcuts import render
-# from .yolo_model import generate_frames
+# class YoloDetectView(APIView):
+#     parser_classes = [MultiPartParser]
 
-# VIDEO_PATH = "C:/Users/joonh/OneDrive/바탕 화면/Django/YOLO/testVideo.mp4"
+#     def post(self, request):
+#         image_file = request.FILES.get('image')
+#         if not image_file:
+#             return Response({"error": "No image provided"}, status=400)
 
-# def video_feed(request):
-#     return StreamingHttpResponse(generate_frames(VIDEO_PATH), content_type="multipart/x-mixed-replace; boundary=frame")
+#         # Celery 백그라운드 작업 호출 (이미지 파일을 처리할 작업 큐에 넣음)
+#         process_yolo_and_tts.delay(image_file.read())
 
-# def index(request):
-#     return render(request, 'index.html')
-
-from django.shortcuts import render
-from .yolo_model import generate_frames
-from django.http import StreamingHttpResponse, JsonResponse
-
-def video_feed(request):
-    return StreamingHttpResponse(generate_frames(0), content_type="multipart/x-mixed-replace; boundary=frame")
-
-def api_info(request):
-    return JsonResponse({"message": "Django API is working!"})  # JSON 응답 추가
+#         # 클라이언트에게 "Processing started" 응답을 즉시 반환
+#         return Response({"message": "Processing started"}, status=202)

@@ -426,16 +426,13 @@ TTS_URL = "https://naveropenapi.apigw.ntruss.com/voice/v1/tts"
 model = YOLO("runs/detect/train/weights/best.pt")
 
 # 카메라 초점 거리 설정
-FOCAL_LENGTH = 800
+FOCAL_LENGTH = 500
 REFERENCE_OBJECT_WIDTH = 50  # 기준 물체의 실제 너비 (cm)
 WARNING_DISTANCE = 300  # 3m (300cm)
 
 # 객체별 경고 상태 저장
 object_warnings = {}
 
-import pygame
-import io
-import urllib.request
 
 def play_tts(text):
     # 클로바 TTS API의 인증 정보 (클라이언트 ID, 클라이언트 시크릿)
@@ -516,7 +513,7 @@ def generate_frames(source=0):  # 🔹 기본값으로 웹캠 사용 (0번 카�
         if closest_obj and closest_distance <= WARNING_DISTANCE:
             class_name, distance, obj_id = closest_obj
             if obj_id not in object_warnings or object_warnings[obj_id] > WARNING_DISTANCE:
-                warning_text = f"경고! {class_name}이 {distance:.0f}cm 앞에 있습니다."
+                warning_text = f"{class_name}이 {distance:.0f}cm 앞에 있습니다."
                 print(f"⚠️ {warning_text}")
                 play_tts(warning_text)  # 🔹 네이버 TTS 호출하여 경고음 출력
 

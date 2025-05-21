@@ -40,8 +40,33 @@ INSTALLED_APPS = [
     'detect',
     'django_extensions',
     'OCR',
-    
+    'rest_framework',
+    'corsheaders',
+    'channels',
+    'ocrgpt',
 ]
+
+ALLOWED_HOSTS = ['*']
+
+ASGI_APPLICATION = 'sorinoon.asgi.application'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -104,6 +129,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
@@ -116,6 +144,12 @@ USE_I18N = True
 
 USE_TZ = True
 
+# Redis 사용 시 (옵션)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    }
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/

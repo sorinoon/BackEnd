@@ -14,8 +14,11 @@ class YoloDetectConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         # 모델 로딩 (처음 연결 시에만)
+        print("[WebSocket] 연결 요청 수신")
         if YoloDetectConsumer.model is None:
+            print("[YOLO] 모델 로딩 중...")
             YoloDetectConsumer.model = YOLO("runs/detect/train/weights/best.pt")
+            print("[YOLO] 모델 로딩 완료")
 
         # WebSocket 연결 수립
         self.room_name = "yolo_room"
@@ -29,9 +32,11 @@ class YoloDetectConsumer(AsyncWebsocketConsumer):
 
         # 클라이언트에 WebSocket 연결 수락 메시지 보내기
         await self.accept()
+        print("[WebSocket] 연결 수락 완료")
 
     async def disconnect(self, close_code):
         # WebSocket 연결 종료 시 방에서 나가기
+        print(f"[WebSocket] 연결 종료됨 (코드: {close_code})")
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -50,59 +55,32 @@ class YoloDetectConsumer(AsyncWebsocketConsumer):
         # 처리 결과를 WebSocket을 통해 클라이언트로 전달
         await self.send(text_data=json.dumps(result))
 
-    # async def process_yolo_and_tts(self, image_data):
-    #     try:
-    #         # 이미지 데이터 디코딩
-    #         img_bytes = base64.b64decode(image_data)
-    #         image = Image.open(io.BytesIO(img_bytes))
-    #         frame = np.array(image)
-    #         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    #         # YOLO 모델 실행
-    #         results = YoloDetectConsumer.model(frame)
-
-    #         detected_objects = []
-    #         closest_obj = None
-    #         closest_distance = float('inf')
-
-    #         for box in results.xywh[0]:  # YOLO 모델 결과
-    #             x1, y1, x2, y2 = map(int, box[:4])
-    #             class_id = int(box[5])  # 클래스 ID
-    #             class_name = YoloDetectConsumer.model.names[class_id]
-    #             object_width_pixels = abs(x2 - x1)
-
-    #             # 거리 계산 (간단한 예시)
-    #             if object_width_pixels > 0:
-    #                 distance = (30 * 615) / object_width_pixels  # 예시
-    #             else:
-    #                 distance = None
-
-    #             detected_objects.append({
-    #                 "class": class_name,
-    #                 "distance_cm": round(distance, 2) if distance else None,
-    #                 "bounding_box": [x1, y1, x2, y2]
-    #             })
-
-    #             if distance and distance < closest_distance:
-    #                 closest_distance = distance
-    #                 closest_obj = class_name
-
-    #         # 경고 메시지
-    #         warning = None
-    #         if closest_obj and closest_distance <= 300:  # 3미터 이내
-    #             warning = f"{closest_obj}이 {int(closest_distance)}센티미터 앞에 있습니다."
-
-    #         return {
-    #             "message": "YOLO 감지 결과",
-    #             "detected_objects": detected_objects,
-    #             "warning": warning
-    #         }
-
-    #     except Exception as e:
-    #         print(f"YOLO 처리 중 오류: {e}")
-    #         return {"error": str(e)}
     async def process_yolo_and_tts(self, image_data):
         try:
+            # 위험 클래스 정의 (COCO class names 기준)
+            danger_classes = {
+                'person': '사람',
+                'bicycle': '자전거',
+                'car': '자동차',
+                'motorcycle': '오토바이',
+                'fire hydrant': '소화전',
+                'bus': '버스',
+                'train': '기차',
+                'truck': '트럭',
+                'traffic light': '신호등',
+                'stop sign': '정지표지판',
+                'cat': '고양이',
+                'dog': '강아지',
+                'backpack': '가방',
+                'parking meter': '주차계기기',
+                'skateboard': '스케이트보드',
+                'bench': '벤치',
+                'bird': '새',
+                'chair': '의자',
+                'couch': '소파'
+            }
+
+
             # 이미지 디코딩
             img_bytes = base64.b64decode(image_data)
             image = Image.open(io.BytesIO(img_bytes)).convert("RGB")
@@ -114,6 +92,7 @@ class YoloDetectConsumer(AsyncWebsocketConsumer):
 
             detected_objects = []
             closest_obj = None
+            
             closest_distance = float('inf')
 
             for box in boxes:
@@ -131,18 +110,21 @@ class YoloDetectConsumer(AsyncWebsocketConsumer):
                     "bounding_box": [x1, y1, x2, y2]
                 })
 
-                if distance and distance < closest_distance:
+                # 위험한 객체 중 가장 가까운 것만 경고 대상으로 선정
+                if class_name in danger_classes and distance and distance < closest_distance:
                     closest_distance = distance
                     closest_obj = class_name
 
-            # 안내 메시지 구성
+            # 안내 메시지 구성 (위험 클래스에 대해서만)
             warning = None
-            if closest_obj and closest_distance <= 300:
-                warning = f"{closest_obj}이 {int(closest_distance)}센티미터 앞에 있습니다."
+            if closest_obj in danger_classes and closest_obj and closest_distance <= 300:
+                warning = f"{danger_classes[closest_obj]}이 앞에 있습니다."
+                #warning = f"{closest_obj}이 앞에 있습니다."
 
             return {
                 "message": "YOLO 감지 결과",
                 "detected_objects": detected_objects,
+                "distance": closest_distance,
                 "warning": warning
             }
 

@@ -41,7 +41,7 @@ def ocr_image(request):
     
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4-vision-preview",
+            model="gpt-3.5-turbo",
             messages=messages,
             max_tokens=1000
         )

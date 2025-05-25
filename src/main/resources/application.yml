@@ -1,6 +1,0 @@
-kakao:
-  client_id: "d4aba9c0b6cff51de5773a0d36b8bf8d"
-  redirect_uri: "http://localhost:8080/callback"
-  kauth_token_url_host: https://kauth.kakao.com
-  kauth_user_url_host: https://kapi.kakao.com
-

@@ -7,17 +7,15 @@ The system is designed to improve safety and independence for visually impaired 
 
 ## Features
 - Real-time object detection using YOLOv8
-- Distance estimation to trigger alerts when obstacles are within 10 meters
+- Distance estimation to trigger alerts when obstacles are within 3 meters
 - OCR integration to extract and read aloud text from images
 - WebSocket-based TTS alerts that operate alongside navigation guidance
 
 ## Tech Stack
-- Frontend: Flutter
-- Backend: Django, WebSocket
-- Computer Vision: YOLOv8
-- OCR: Tesseract OCR
-- TTS: Naver Clova TTS
-- Environment: Windows, Ubuntu
+- Backend: Django, Spring Boot
+- Computer Vision: YOLO
+- OCR: Naver Clova OCR
+- Environment: Windows
 
 ## Project Structure
 <img width="948" height="639" alt="image" src="https://github.com/user-attachments/assets/f1027704-2368-4a16-bc62-efc8cc704d9b" />

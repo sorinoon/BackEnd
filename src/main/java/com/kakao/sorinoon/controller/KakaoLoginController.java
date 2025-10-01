@@ -34,10 +34,14 @@ public class KakaoLoginController {
     private final KakaoService kakaoService;
 
     @GetMapping("/callback")
-    public Mono<ResponseEntity<String>> callback(@RequestParam("code") String code) {
+    public Mono<ResponseEntity<KakaoUserInfoResponseDto>> callback(@RequestParam("code") String code) {
         return kakaoService.getAccessTokenFromKakao(code)
+                .flatMap(kakaoService::getUserInfo)
                 .map(ResponseEntity::ok)
-                .onErrorResume(e -> Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error occurred")));
+                .onErrorResume(e -> {
+                    log.error("Kakao login error: ", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                });
     }
 
 }
